@@ -31,7 +31,7 @@ _KEY_BYTES: Final = 32
 _MAX_OBSERVATION_BYTES: Final = 65_536
 _MAX_SIGNATURE_BYTES: Final = 4_096
 _TERMINAL_STATUSES: Final = frozenset({"completed", "failed", "timed_out", "cancelled"})
-_UTC_Z: Final = re.compile(r"^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?Z$")
+_UTC_Z: Final = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?Z$")
 
 
 class ReceiptVerificationError(Exception):
@@ -94,7 +94,7 @@ def hermes_child_run_dir(omh_home: Path, run_id: str, *, create_root: bool) -> P
         safe_run_id = require_opaque_metadata_ref(run_id, field="run_id")
     except ValueError as exc:
         raise ReceiptVerificationError(str(exc)) from exc
-    if safe_run_id in {".", ".."} or "/" in safe_run_id or "\\\\" in safe_run_id:
+    if safe_run_id in {".", ".."} or "/" in safe_run_id or "\\" in safe_run_id:
         raise ReceiptVerificationError("run_id must be a single safe opaque metadata reference")
     home = omh_home.expanduser()
     coding = home / "coding"
@@ -218,11 +218,11 @@ def load_hermes_child_receipt(
     if signature.get("schema_version") != _SIGNATURE_SCHEMA:
         raise ReceiptVerificationError("Hermes child observation signature is invalid")
     observed_signature = signature.get("hmac_sha256")
-    if not isinstance(observed_signature, str):\
+    if not isinstance(observed_signature, str):
         raise ReceiptVerificationError("Hermes child observation signature is invalid")
     key = _read_observation_key(run_dir.parent / ".observation-hmac-key")
     expected = hmac.new(key, canonical_observation(observation), hashlib.sha256).hexdigest()
-    if not hmac.compare_digest(observed_signature, expected):\
+    if not hmac.compare_digest(observed_signature, expected):
         raise ReceiptVerificationError("Hermes child observation signature is invalid")
     binding_value = observation.get("evaluation_binding")
     binding = (
@@ -234,7 +234,7 @@ def load_hermes_child_receipt(
         raise ReceiptVerificationError("Hermes child evaluation binding is invalid")
     digest = hmac.new(
         key,
-        canonical_observation(observation) + b"\\0receipt",
+        canonical_observation(observation) + b"\0receipt",
         hashlib.sha256,
     ).hexdigest()
     return VerifiedHermesChildReceipt(
